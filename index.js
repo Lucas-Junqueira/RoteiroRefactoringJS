@@ -1,13 +1,22 @@
 const { readFileSync } = require('fs');
 
 function gerarFaturaStr(fatura, pecas) {
-  
+
   // Função query
   function getPeca(apresentacao) {
     return pecas[apresentacao.id];
   }
 
-  // Função refatorada
+  // Função de formatação extraída
+  function formatarMoeda(valor) {
+    return new Intl.NumberFormat("pt-BR", {
+      style: "currency",
+      currency: "BRL",
+      minimumFractionDigits: 2
+    }).format(valor / 100);
+  }
+
+  // Função extraída de cálculo de total
   function calcularTotalApresentacao(apre) {
     let total = 0;
     const peca = getPeca(apre);
@@ -31,26 +40,28 @@ function gerarFaturaStr(fatura, pecas) {
     return total;
   }
 
-  let totalFatura = 0;
-  let creditos = 0;
-  let faturaStr = `Fatura ${fatura.cliente}\n`;
-  const formato = new Intl.NumberFormat("pt-BR",
-    { style: "currency", currency: "BRL", minimumFractionDigits: 2 }).format;
-
-  for (let apre of fatura.apresentacoes) {
-    // const peca = getPeca(apre);
-    let total = calcularTotalApresentacao(apre);
-
-    // Substituindo todos os usos de 'peca' por getPeca(apre)
+  // Função extraída de cálculo de créditos
+  function calcularCredito(apre) {
+    let creditos = 0;
     creditos += Math.max(apre.audiencia - 30, 0);
     if (getPeca(apre).tipo === "comedia")
       creditos += Math.floor(apre.audiencia / 5);
+    return creditos;
+  }
 
-    faturaStr += `  ${getPeca(apre).nome}: ${formato(total / 100)} (${apre.audiencia} assentos)\n`;
+  let totalFatura = 0;
+  let creditos = 0;
+  let faturaStr = `Fatura ${fatura.cliente}\n`;
+
+  for (let apre of fatura.apresentacoes) {
+    let total = calcularTotalApresentacao(apre);
+    creditos += calcularCredito(apre);
+
+    faturaStr += `  ${getPeca(apre).nome}: ${formatarMoeda(total)} (${apre.audiencia} assentos)\n`;
     totalFatura += total;
   }
 
-  faturaStr += `Valor total: ${formato(totalFatura / 100)}\n`;
+  faturaStr += `Valor total: ${formatarMoeda(totalFatura)}\n`;
   faturaStr += `Créditos acumulados: ${creditos} \n`;
   return faturaStr;
 }
