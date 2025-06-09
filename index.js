@@ -7,7 +7,7 @@ function gerarFaturaStr(fatura, pecas) {
     return pecas[apresentacao.id];
   }
 
-  // Função de formatação extraída
+  // Função de formatação
   function formatarMoeda(valor) {
     return new Intl.NumberFormat("pt-BR", {
       style: "currency",
@@ -16,7 +16,7 @@ function gerarFaturaStr(fatura, pecas) {
     }).format(valor / 100);
   }
 
-  // Função extraída de cálculo de total
+  // Calcula valor individual da apresentação
   function calcularTotalApresentacao(apre) {
     let total = 0;
     const peca = getPeca(apre);
@@ -40,7 +40,7 @@ function gerarFaturaStr(fatura, pecas) {
     return total;
   }
 
-  // Função extraída de cálculo de créditos
+  // Calcula créditos de uma apresentação
   function calcularCredito(apre) {
     let creditos = 0;
     creditos += Math.max(apre.audiencia - 30, 0);
@@ -49,20 +49,26 @@ function gerarFaturaStr(fatura, pecas) {
     return creditos;
   }
 
-  let totalFatura = 0;
-  let creditos = 0;
-  let faturaStr = `Fatura ${fatura.cliente}\n`;
-
-  for (let apre of fatura.apresentacoes) {
-    let total = calcularTotalApresentacao(apre);
-    creditos += calcularCredito(apre);
-
-    faturaStr += `  ${getPeca(apre).nome}: ${formatarMoeda(total)} (${apre.audiencia} assentos)\n`;
-    totalFatura += total;
+  // Total geral da fatura
+  function calcularTotalFatura() {
+    return fatura.apresentacoes
+      .reduce((total, apre) => total + calcularTotalApresentacao(apre), 0);
   }
 
-  faturaStr += `Valor total: ${formatarMoeda(totalFatura)}\n`;
-  faturaStr += `Créditos acumulados: ${creditos} \n`;
+  // Total de créditos
+  function calcularTotalCreditos() {
+    return fatura.apresentacoes
+      .reduce((total, apre) => total + calcularCredito(apre), 0);
+  }
+
+  // Corpo principal de geração da fatura
+  let faturaStr = `Fatura ${fatura.cliente}\n`;
+  for (let apre of fatura.apresentacoes) {
+    faturaStr += `  ${getPeca(apre).nome}: ${formatarMoeda(calcularTotalApresentacao(apre))} (${apre.audiencia} assentos)\n`;
+  }
+  faturaStr += `Valor total: ${formatarMoeda(calcularTotalFatura())}\n`;
+  faturaStr += `Créditos acumulados: ${calcularTotalCreditos()} \n`;
+
   return faturaStr;
 }
 
